@@ -1,0 +1,182 @@
+clear all;
+clear;
+clc;
+
+filename1 = '../script/final/spkList15';
+delimiter1 = '';
+formatSpec1 = '%s%[^\n\r]';
+fileID1 = fopen(filename1,'r');
+dataArray1 = textscan(fileID1, formatSpec1, 'Delimiter', delimiter1,  'ReturnOnError', false);
+fclose(fileID1);
+spkList1 = dataArray1{:, 1};
+clearvars filename1 delimiter1 formatSpec1 fileID1 dataArray1 ans;
+
+
+filename1 = '../Trans/AllTrans';
+delimiter1 = '';
+formatSpec1 = '%s%[^\n\r]';
+fileID1 = fopen(filename1,'r');
+dataArray1 = textscan(fileID1, formatSpec1, 'Delimiter', delimiter1,  'ReturnOnError', false);
+fclose(fileID1);
+spkList2 = dataArray1{:, 1};
+clearvars filename1 delimiter1 formatSpec1 fileID1 dataArray1 ans;
+
+
+adjMat=zeros(length(spkList1),length(spkList1));
+
+
+for t = 1:size(spkList1,1)
+    % Selecting the One file posteriors
+    twav='../WAV/';
+    twFinal=strcat(twav,spkList1(t),'.wav');
+    tPost='../posterior/MFCC/';
+    tpFinal=strcat(tPost,spkList1(t),'.post');
+    
+    % Selecting the Another file posteriors
+    for q = (t+1):size(spkList1,1)
+        
+        qwav='../WAV/';
+        qwFinal=strcat(qwav,spkList1(q),'.wav');
+        qPost='../posterior/MFCC/';
+        qpFinal=strcat(qPost,spkList1(q),'.post');
+        
+        [qa1,qfs] = audioread(char(qwFinal));
+        [ta1,tfs] = audioread(char(twFinal));
+        
+        lamda=0.0001;
+        ud = 0.1270;
+        
+        tp1=load(char(tpFinal));
+        qp1=load(char(qpFinal));
+        
+        tp3=(1-lamda)*tp1+lamda*ud;
+        qp3=(1-lamda)*qp1+lamda*ud;
+        D=[];
+        tp4 = tp3';
+        qp4 = qp3';
+        
+     
+        D= newnomKLSDiv(tp4,tp4);
+        
+       
+      
+        BW = edge(D,'Canny');
+        
+        F = imfill(BW,'holes');
+        se = strel('disk',1);
+        closeBW = imclose(F,se);
+        
+        BW2 = bwareaopen(closeBW, 70);
+        
+    
+  
+        B1 = imclearborder(BW2);
+      
+        se = strel('line',5,135);
+        dilateddBW = imdilate(B1,se);
+        img= imerode(dilateddBW,se);
+        
+        BW3 = bwareaopen(img, 70);
+        
+%         newFileName1  = strcat(num2str(t),'and',num2str(q),ext1);
+%         fullFileName1 = fullfile(folderName1, newFileName1);
+%         % imwrite(BW3,fullFileName1);
+%        
+%          figure
+%          imagesc(1/qfs:shift_period:(cols*shift_period),1/qfs:shift_period:(rows*shift_period),1-BW2);
+%          ylabel(celldata(t));
+%          xlabel(celldata(q));
+%          set(gca,'YDir','normal');
+%          colormap(1-gray);
+%          saveas(gcf,fullFileName1,'png')
+%          Frame_size = 25;  %Input: Frame-size in millisecond
+%          Frame_shift = 10; %Input: Frame-shift in millisecond
+%          window_period=Frame_size/1000;
+%          shift_period=Frame_shift/1000;
+%          [rows,cols] = size(BW2);
+%         figure
+%         imagesc(1/qfs:shift_period:(cols*shift_period),1/qfs:shift_period:(rows*shift_period),1-BW3);
+%         ylabel(spkList2(t));
+%         xlabel(spkList2(q));
+%         set(gca,'YDir','normal');
+%         colormap(1-gray);
+        %saveas(gcf, ['../img/imgND/figure_' num2str(q) '-' num2str(t) ],'png')
+        
+        imageStats = regionprops(BW3,'all');
+        compNumber = size(imageStats);
+        for i=1:compNumber % to compare sizes of connected components
+            box1 = imageStats(i).SubarrayIdx;
+            box2 = box1{1,1};
+            rowstart = box2(1,1);
+            box4 = size(box2);
+            box5 = box2(1,box4);
+            rowend = box5(1,2);
+            
+            box6 = box1{1,2};
+            colstart = box6(1,1);
+            box7 = size(box6);
+            box8 = box6(1,box7);
+            colend = box8(1,2);
+            
+            C = BW3(rowstart:rowend,colstart:colend); %first row, and second col
+    
+%             Frame_size = 25;  %Input: Frame-size in millisecond
+%             Frame_shift = 10; %Input: Frame-shift in millisecond
+%             window_period=Frame_size/1000;
+%             shift_period=Frame_shift/1000;
+%             [rows,cols] = size(C);
+%             figure
+%             imagesc(1/qfs:shift_period:(cols*shift_period),1/qfs:shift_period:(rows*shift_period),1-C);
+%             set(gca,'YDir','normal');
+%             colormap(1-gray);
+%             saveas(gcf, ['img/2-4/figure_' num2str(i)],'png');
+            
+            Frame_size = 25;  %Input: Frame-size in millisecond
+            Frame_shift = 10; %Input: Frame-shift in millisecond
+            window_period=Frame_size/1000;
+            shift_period=Frame_shift/1000;
+            [rows,cols] = size(C);
+            %t
+            match1 = 1/qfs:shift_period:(rowend*shift_period);
+            %q
+            match2 = 1/qfs:shift_period:(colend*shift_period);
+            [~,ang] = imgradient(C);
+            %figure, imshow(ang, []), title('Gradient direction') 
+            angg1 = reshape(ang, 1, []);
+            B = sort(angg1);
+            B1 = find(B < 0);
+            B2 = B(1,1:length(B1));
+            [V1,V2]=hist(B2,20);
+            
+            
+%             figure
+%             hist(B2,20);
+%             saveas(gcf, ['img/2-4/figure_H' num2str(i)],'png');
+            
+            V11 = find(V2 < -130);
+            hig1 = V1(length(V11));
+            hig2 = max(V1(V1<max(V1)));
+            res = abs(hig1 - hig2);
+            res1 = abs(rowend-rowstart);            
+            if(res>=30 && res1>=50)
+                 fprintf('Time match in %d is %f to %f and Time match in %d is %f to %f \n', t,match1(rowstart),match1(length(match1())),q,match2(colstart),match2(length(match2())));
+                 adjMat(t,q)=1;
+                 adjMat(q,t)=1;
+            end
+        end
+    end
+end
+
+termAMWFN='termAdjMat1DocTo77.csv';
+
+fid = fopen(termAMWFN,'wt');
+if fid>0
+    for k=1:size(adjMat,1)
+        fprintf(fid,'%s,%f\n',adjMat(k,:));
+    end
+    fclose(fid);
+end
+ 
+ 
+
+
