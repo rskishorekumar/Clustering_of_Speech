@@ -25,3 +25,20 @@ The method outputs the matching time stamps between the speech utterances.
 
 Source code is tested in Matlab 2016B, Linux Environment.
 
+# Citation 
+
+If you use the code for research work, please cite:
+```
+@article{R2018254,
+title = {A robust unsupervised pattern discovery and clustering of speech signals},
+journal = {Pattern Recognition Letters},
+volume = {116},
+pages = {254-261},
+year = {2018},
+issn = {0167-8655},
+doi = {https://doi.org/10.1016/j.patrec.2018.10.035},
+url = {https://www.sciencedirect.com/science/article/pii/S016786551830864X},
+author = {Kishore Kumar R and Lokendra Birla and Sreenivasa Rao K}
+}
+
+```
